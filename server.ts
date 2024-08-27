@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import { query } from './query';
+import { randomUUID } from 'crypto';
 import { decodeBase64Image, fileToGenerativePart  } from './utils'; 
 import { generateContentFromImage } from './gemini'; 
 
@@ -14,6 +15,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 
 app.post('/upload', async (req: Request, res: Response) => {
     let { image, customer_code, measure_datetime, measure_type } = req.body;
+    const measureUuid = randomUUID(); // UUID gerado corretamente
 
     // Decodificar a imagem base64
     const imageData = await decodeBase64Image(image);
@@ -23,15 +25,38 @@ app.post('/upload', async (req: Request, res: Response) => {
         return res.status(400).json({ error_code: "INVALID_DATA", error_description: "Missing or invalid parameters." });
     }
 
+    let measureValue; // Declaração de measureValue no escopo apropriado
+
     try {
         // Converter arquivo local para parte utilizável pela API do Google Gemini
         const filePart = fileToGenerativePart(imageData.uri, imageData.mimeType);
 
         const result = await generateContentFromImage(filePart, "Extract measure value");
         
-        /* FIX */
-        /* await query('INSERT INTO measurements (customer_code, measure_datetime, measure_type, measure_value, image_url, measure_uuid) VALUES (?, ?, ?, ?, ?, ?)', [customer_code, measure_datetime, measure_type, result.measure_value, result.image_url, result.measure_uuid]); */
-        res.status(200).json(result);
+        const measureText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (measureText) {
+            const matches = measureText.match(/\d+\.\d+/); // Correção: escape correto para ponto decimal
+            if (matches) {
+                measureValue = parseFloat(matches[0]); // Atribuição a measureValue no escopo correto
+                // Continue com a inserção no banco de dados e resposta
+            } else {
+                // Lida com a situação onde não há um valor numérico válido no texto
+                return res.status(400).json({ error_code: "NO_MEASUREMENT_FOUND", error_description: "No valid measurement value found in the text." });
+            }
+        } else {
+            // Lida com a situação onde os dados esperados não estão presentes
+            return res.status(500).json({ error_code: "INVALID_RESPONSE", error_description: "Invalid or incomplete data received from API" });
+        }
+
+        // Verifica se measureValue foi definido antes de inserir no banco de dados
+        if (typeof measureValue === 'number') {
+            await query('INSERT INTO measurements (customer_code, measure_datetime, measure_type, measure_value, image_url, measure_uuid) VALUES (?, ?, ?, ?, ?, ?)', 
+                        [customer_code, measure_datetime, measure_type, measureValue, imageData.uri, measureUuid]);
+            res.status(200).json(result);
+        } else {
+            return res.status(400).json({ error_code: "NO_MEASUREMENT_VALUE", error_description: "Measurement value could not be determined." });
+        }
     } catch (error: unknown) {
         if (error instanceof Error) {
             res.status(500).json({ error_code: "SERVER_ERROR", error_description: "Internal server error: " + error.message });
@@ -40,6 +65,7 @@ app.post('/upload', async (req: Request, res: Response) => {
         }
     }
 });
+
 
 app.patch('/confirm', async (req: Request, res: Response) => {
     const { measure_uuid, confirmed_value } = req.body;
