@@ -53,8 +53,9 @@ export async function decodeBase64Image(base64Str: string): Promise<{ mimeType: 
 export function fileToGenerativePart(path: string, mimeType: string): { inlineData: { data: string, mimeType: string } } {
     return {
         inlineData: {
+            // Lê o arquivo especificado pelo 'path', converte o conteúdo para Buffer e então para uma string base64.
             data: Buffer.from(fs.readFileSync(path)).toString("base64"),
-            mimeType
+            mimeType // Inclui o tipo MIME do arquivo no objeto retornado.
         },
     };
 }
