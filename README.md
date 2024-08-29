@@ -14,7 +14,7 @@ Para rodar este projeto, você precisará ter o Docker instalado na sua máquina
 ### Instalação e Execução
 
 Com o Docker instalado, você pode configurar e executar o projeto com o seguinte comando:
-```http
+```plaintext
 docker-compose up --build
 ```
 
@@ -22,7 +22,7 @@ docker-compose up --build
 
 Após executar os comandos acima, o servidor estará ativo e pode ser acessado via:
 
-```http
+```plaintext
 http://localhost
 ```
 
@@ -63,7 +63,7 @@ GEMINI_API_KEY=  # Chave de API para acesso ao Gemini
 
 #### Recebe uma imagem em base64, consulta o Gemini e retorna a medida lida pela API.
 
-```http
+```plaintext
 POST /upload
 ```
 
@@ -77,7 +77,7 @@ POST /upload
 
 #### Confirma ou corrige o valor lido pelo LLM.
 
-```http
+```plaintext
   PATCH /confirm
 ```
 
@@ -88,7 +88,7 @@ POST /upload
 
 #### Lista as medidas realizadas por um cliente específico.
 
-```http
+```plaintext
   GET /<customer_code>/list?measure_type=`Tipo de medição`
 ```
 
