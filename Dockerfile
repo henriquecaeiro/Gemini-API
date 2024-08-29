@@ -16,6 +16,9 @@ COPY . .
 # Compila o código TypeScript para JavaScript
 RUN npm run build
 
+# Listar os arquivos em dist para depuração
+RUN ls -al ./dist
+
 # Expõe a porta que o app vai rodar
 EXPOSE 80
 
