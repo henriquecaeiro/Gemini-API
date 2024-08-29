@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Criação da pool de conexão
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -13,6 +14,7 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+// Função de consulta ao banco de dados
 export const query = async (sql: string, values?: any[]): Promise<any> => {
     const [rows] = await pool.query(sql, values);
     return rows;

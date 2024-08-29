@@ -14,20 +14,20 @@ const PORT = 80;
 app.use(bodyParser.json({ limit: '50mb' }));
 
 app.post('/upload', async (req: Request, res: Response) => {
-    let { image, customer_code, measure_datetime, measure_type } = req.body; // Ajuste para usar 'customer_code' em vez de 'customer_code'
-    const measureUuid = randomUUID(); // UUID gerado corretamente
+    let { image, customer_code, measure_datetime, measure_type } = req.body; 
+    const measureUuid = randomUUID(); 
 
     // Decodificar a imagem base64
     const imageData = await decodeBase64Image(image);
 
     const imageUri = imageData!.uri;
 
-    // Continuar com as validações e processamento
+    // Validações e processamento
     if (!imageData || !customer_code || !measure_datetime || !measure_type) {
         return res.status(400).json({ error_code: "INVALID_DATA", error_description: "Parâmentros inválidos ou faltante" });
     }
 
-    let measureValue; // Declaração de measureValue no escopo apropriado
+    let measureValue; 
 
     try {
 
@@ -48,10 +48,10 @@ app.post('/upload', async (req: Request, res: Response) => {
         const measureText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (measureText) {
-            const matches = measureText.match(/\d+\.\d+/); // Correção: escape correto para ponto decimal
+            const matches = measureText.match(/\d+\.\d+/); 
             if (matches) {
-                measureValue = parseFloat(matches[0]); // Atribuição a measureValue no escopo correto
-                // Continue com a inserção no banco de dados e resposta e verifica se measureValue foi definido antes de inserir no banco de dados
+                measureValue = parseFloat(matches[0]); 
+                // Inserção no banco de dados e resposta e verifica se measureValue foi definido antes de inserir no banco de dados
                 if (typeof measureValue === 'number') {
                     await query('INSERT INTO measurements (customer_code, measure_datetime, measure_type, measure_value, image_url, measure_uuid) VALUES (?, ?, ?, ?, ?, ?)',
                         [customer_code, measure_datetime, measure_type, measureValue, imageUri, measureUuid]);
@@ -69,6 +69,7 @@ app.post('/upload', async (req: Request, res: Response) => {
         }
 
     } catch (error: unknown) {
+        // Lida com erros de servidor
         if (error instanceof Error) {
             res.status(500).json({ error_code: "SERVER_ERROR", error_description: "Erro interno do servidor: " + error.message });
         } else {
@@ -80,7 +81,7 @@ app.post('/upload', async (req: Request, res: Response) => {
 app.patch('/confirm', async (req: Request, res: Response) => {
     const { measure_uuid, confirmed_value } = req.body;
 
-    // Validar o tipo de dados dos parâmetros enviados
+    // Valida o tipo de dados dos parâmetros enviados
     if (typeof measure_uuid !== 'string' || typeof confirmed_value !== 'number') {
         return res.status(400).json({
             error_code: "INVALID_DATA",
@@ -89,7 +90,7 @@ app.patch('/confirm', async (req: Request, res: Response) => {
     }
 
     try {
-        // Verificar se o código de leitura informado existe e se já foi confirmado
+        // Verifica se o código de leitura informado existe e se já foi confirmado
         const result = await query('SELECT confirmed FROM measurements WHERE measure_uuid = ?', [measure_uuid]);
 
         if (result.length === 0) {
@@ -108,7 +109,7 @@ app.patch('/confirm', async (req: Request, res: Response) => {
             });
         }
 
-        // Atualizar o valor confirmado no banco de dados
+        // Atualiza o valor confirmado no banco de dados
         await query('UPDATE measurements SET measure_value = ?, confirmed = TRUE WHERE measure_uuid = ?', [confirmed_value, measure_uuid]);
 
         // Resposta de sucesso
@@ -161,7 +162,7 @@ app.get('/:customerCode/list', async (req: Request, res: Response) => {
             });
         }
 
-        // Mapear os resultados para o formato desejado
+        // Mapea os resultados para o formato desejado
         const formattedResults = results.map((measure: any) => ({
             measure_uuid: measure.measure_uuid,
             measure_datetime: measure.measure_datetime,
@@ -170,7 +171,7 @@ app.get('/:customerCode/list', async (req: Request, res: Response) => {
             image_url: measure.image_url
         }));
 
-        // Retornar a lista de medidas
+        // Retorna a lista de medidas
         res.status(200).json({
             customer_code: customerCode,
             measures: formattedResults
