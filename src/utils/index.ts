@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { Buffer } from 'buffer';
+import { promises as fsPromises } from 'fs';
 
 export async function decodeBase64Image(base64Str: string): Promise<{ mimeType: string, uri: string } | null> {
     // Regex para extrair o tipo MIME e os dados em base64
@@ -15,13 +15,18 @@ export async function decodeBase64Image(base64Str: string): Promise<{ mimeType: 
     try {
         // Lê o número atual da imagem ou inicia com 1 se o arquivo não existir
         const numberFilePath = './imageCounter.txt';
+        const tempDirPath = './temp'; // Caminho para a pasta temporária
         let currentNumber = 1;
+
+        // Verifica e cria a pasta temp se não existir
+        await fsPromises.mkdir(tempDirPath, { recursive: true });
+
         try {
-            const number = await fs.promises.readFile(numberFilePath, 'utf8');
+            const number = await fsPromises.readFile(numberFilePath, 'utf8');
             currentNumber = parseInt(number, 10);
         } catch (error) {
             // Assume que a falta de arquivo significa começar pelo um
-            await fs.promises.writeFile(numberFilePath, '1'); // Inicializa o arquivo de contador se não estiver presente
+            await fsPromises.writeFile(numberFilePath, '1'); // Inicializa o arquivo de contador se não estiver presente
         }
 
         // Decodifica a string base64 para dados binários
@@ -29,14 +34,14 @@ export async function decodeBase64Image(base64Str: string): Promise<{ mimeType: 
 
         // Gera o nome do arquivo usando o número atual da imagem
         const filename = `image${String(currentNumber).padStart(2, '0')}.png`; // Garante nomes de arquivo como "image01", "image02", etc.
-        const uri = `./temp/${filename}`;
+        const uri = `${tempDirPath}/${filename}`;
 
         // Salva a imagem no diretório temp
-        await fs.promises.writeFile(uri, buffer);
+        await fsPromises.writeFile(uri, buffer);
 
         // Incrementa o número da imagem e atualiza o arquivo de contador
         const nextNumber = currentNumber + 1;
-        await fs.promises.writeFile(numberFilePath, nextNumber.toString());
+        await fsPromises.writeFile(numberFilePath, nextNumber.toString());
 
         return { mimeType, uri };
     } catch (error) {
@@ -48,8 +53,9 @@ export async function decodeBase64Image(base64Str: string): Promise<{ mimeType: 
 export function fileToGenerativePart(path: string, mimeType: string): { inlineData: { data: string, mimeType: string } } {
     return {
         inlineData: {
+            // Lê o arquivo especificado pelo 'path', converte o conteúdo para Buffer e então para uma string base64.
             data: Buffer.from(fs.readFileSync(path)).toString("base64"),
-            mimeType
+            mimeType // Inclui o tipo MIME do arquivo no objeto retornado.
         },
     };
 }
