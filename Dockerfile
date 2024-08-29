@@ -1,15 +1,23 @@
-FROM node:14
+# Imagem base
+FROM node:18
 
-WORKDIR /app
+# Define o diretório de trabalho no container
+WORKDIR /usr/src/app
 
+# Copia os arquivos de dependência
 COPY package*.json ./
 
-# Limpar o cache do npm e reinstalar as dependências para garantir que tudo está atualizado
-RUN npm cache clean --force && npm install
-RUN npm install -g ts-node typescript @types/node
+# Instala as dependências
+RUN npm install
 
+# Copia os arquivos locais para o diretório de trabalho do container
 COPY . .
 
+# Compila o código TypeScript para JavaScript
+RUN npm run build
+
+# Expõe a porta que o app vai rodar
 EXPOSE 80
 
-CMD ["ts-node", "server.ts"]
+# Comando para rodar a aplicação
+CMD [ "node", "dist/app.js" ]
