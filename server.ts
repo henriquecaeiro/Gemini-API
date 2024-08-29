@@ -9,7 +9,7 @@ import { generateContentFromImage } from './gemini';
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 80;
 
 app.use(bodyParser.json({ limit: '50mb' }));
 

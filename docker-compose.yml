@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=desafio
+    depends_on:
+      - mysql
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: desafio
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
